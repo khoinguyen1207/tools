@@ -1,9 +1,7 @@
-import { Actions, PoolKey, SwapExactIn, V4Planner } from "@uniswap/v4-sdk";
 import { CommandType, RoutePlanner } from "@uniswap/universal-router-sdk";
-import { zeroAddress } from "viem";
-import { encodeMultihopExactInPath } from "../utils/uniswap-v4";
 import { ethers } from "ethers";
 import { envConfig } from "../config";
+import { encodePathExactInput } from "../web3/utils/uniswap-v3";
 
 // Example configuration - replace with your own values
 // Unichain Mainnet: 130
@@ -20,39 +18,23 @@ const ADDRESSES = {
   USDT: "0xdAC17F958A7e4cE539739dF2C5dAcb4c659F2488D",
 };
 
-const ETH_USDC_POOL_KEY: PoolKey = {
-  currency0: ADDRESSES.ETH,
-  currency1: ADDRESSES.USDC,
-  fee: 3000,
-  tickSpacing: 60,
-  hooks: zeroAddress,
-};
-
-const USDC_USDT_POOL_KEY: PoolKey = {
-  currency0: ADDRESSES.USDC,
-  currency1: ADDRESSES.USDT,
-  fee: 100,
-  tickSpacing: 1,
-  hooks: zeroAddress,
-};
-
 const main = async () => {
-  const v4Planner = new V4Planner();
   const routePlanner = new RoutePlanner();
 
   const deadline = Math.floor(Date.now() / 1000) + 3600;
   const amountIn = ethers.parseUnits("0.001", 18); // 0.001 ETH
-  const swapConfig: SwapExactIn = {
-    currencyIn: ADDRESSES.ETH,
-    path: encodeMultihopExactInPath([ETH_USDC_POOL_KEY, USDC_USDT_POOL_KEY], ADDRESSES.ETH),
-    amountIn: amountIn.toString(),
-    amountOutMinimum: "0",
-  };
 
-  v4Planner.addAction(Actions.SWAP_EXACT_IN, [swapConfig]);
-  v4Planner.addAction(Actions.SETTLE_ALL, [ETH_USDC_POOL_KEY.currency0, amountIn]);
-  v4Planner.addAction(Actions.TAKE_ALL, [USDC_USDT_POOL_KEY.currency1, 0n]);
-  routePlanner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params]);
+  const pathTokens = [ADDRESSES.ETH, ADDRESSES.USDC, ADDRESSES.USDT];
+  const poolFees = [3000, 100];
+
+  routePlanner.addCommand(CommandType.WRAP_ETH, [ADDRESSES.UNIVERSAL_ROUTER, amountIn]);
+  routePlanner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+    wallet.address, // recipient
+    amountIn,
+    0,
+    encodePathExactInput(pathTokens, poolFees),
+    false,
+  ]);
   const { commands, inputs } = routePlanner;
 
   const universalRouter = new ethers.Contract(

